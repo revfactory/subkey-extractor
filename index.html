@@ -263,8 +263,22 @@
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
+        // Google OAuth Client ID
+        const DEFAULT_CLIENT_ID = '895513373891-va2gjpb84kcecvfnq0j3tvri5nu6c4b6.apps.googleusercontent.com';
+
         let tokenClient;
         let accessToken = null;
+
+        // 페이지 로드시 자동 초기화
+        window.onload = function() {
+            // Client ID 필드에 기본값 설정
+            document.getElementById('clientId').value = DEFAULT_CLIENT_ID;
+
+            // 자동으로 Google Auth 초기화
+            setTimeout(() => {
+                initializeGoogleAuth();
+            }, 500);
+        };
 
         function showStatus(message, isSuccess) {
             const statusElement = document.getElementById('statusMessage');
@@ -306,8 +320,6 @@
             document.getElementById('setupSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('googleLoginBtn').style.display = 'block';
-
-            showStatus('설정이 완료되었습니다. Google로 로그인하세요.', true);
         }
 
         function handleCredentialResponse(response) {
@@ -359,8 +371,7 @@
         function handleLogout() {
             // 결과 초기화
             document.getElementById('resultSection').style.display = 'none';
-            document.getElementById('setupSection').style.display = 'block';
-            document.getElementById('clientId').value = '';
+            document.getElementById('loginSection').style.display = 'block';
 
             showStatus('로그아웃되었습니다.', true);
         }
