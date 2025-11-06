@@ -150,6 +150,38 @@
             border: 1px solid #ddd;
         }
 
+        .json-container {
+            background: #282c34;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #abb2bf;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        .json-key {
+            color: #e06c75;
+        }
+
+        .json-string {
+            color: #98c379;
+        }
+
+        .json-number {
+            color: #d19a66;
+        }
+
+        .json-boolean {
+            color: #56b6c2;
+        }
+
+        .json-null {
+            color: #c678dd;
+        }
+
         .copy-btn {
             background: #28a745;
             color: white;
@@ -253,7 +285,7 @@
 
             <div class="result-box">
                 <h3>🔑 전체 JWT 토큰 Payload</h3>
-                <div class="result-value" id="fullPayload" style="max-height: 200px; overflow-y: auto;"></div>
+                <div class="json-container" id="fullPayload" style="max-height: 300px; overflow-y: auto;"></div>
                 <button class="copy-btn" onclick="copyToClipboard('fullPayload')">📋 복사</button>
             </div>
 
@@ -264,7 +296,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         // Google OAuth Client ID
-        const DEFAULT_CLIENT_ID = '895513373891-va2gjpb84kcecvfnq0j3tvri5nu6c4b6.apps.googleusercontent.com';
+        const DEFAULT_CLIENT_ID = '895513373891-9vmlpbbhqbds8pjt7ec0t2io1qet50cs.apps.googleusercontent.com';
 
         let tokenClient;
         let accessToken = null;
@@ -346,6 +378,30 @@
             }
         }
 
+        function syntaxHighlight(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, null, 2);
+            }
+
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
         function displayResults(payload) {
             // Sub key 표시
             document.getElementById('subKeyValue').textContent = payload.sub || 'N/A';
@@ -356,8 +412,8 @@
             // 이름 표시
             document.getElementById('nameValue').textContent = payload.name || 'N/A';
 
-            // 전체 payload 표시 (보기 좋게 포맷팅)
-            document.getElementById('fullPayload').textContent = JSON.stringify(payload, null, 2);
+            // 전체 payload 표시 (색상 하이라이팅 적용)
+            document.getElementById('fullPayload').innerHTML = syntaxHighlight(payload);
 
             // 결과 섹션 표시
             document.getElementById('resultSection').style.display = 'block';
@@ -378,7 +434,8 @@
 
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
-            const text = element.textContent;
+            // innerText는 보이는 텍스트만 가져오므로 HTML 태그 제외됨
+            const text = element.innerText || element.textContent;
 
             navigator.clipboard.writeText(text).then(() => {
                 showStatus('클립보드에 복사되었습니다!', true);
