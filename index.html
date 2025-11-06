@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google JWT Sub Key 추출기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .setup-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .setup-section h2 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-google {
+            background: white;
+            color: #444;
+            border: 2px solid #ddd;
+            display: none;
+        }
+
+        .btn-google:hover {
+            border-color: #667eea;
+        }
+
+        .btn-google img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .result-box h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .result-value {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .logout-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google JWT Sub Key 추출기</h1>
+
+        <div class="setup-section" id="setupSection">
+            <h2>설정</h2>
+            <p class="info-text">
+                Google OAuth 클라이언트 ID를 입력하세요.
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>에서 생성할 수 있습니다.
+            </p>
+            <div class="input-group">
+                <label for="clientId">Google OAuth Client ID</label>
+                <input type="text" id="clientId" placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com">
+            </div>
+            <button class="btn btn-primary" onclick="initializeGoogleAuth()">설정 완료</button>
+        </div>
+
+        <div id="loginSection" style="display: none;">
+            <button class="btn btn-google" id="googleLoginBtn" onclick="handleGoogleLogin()">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=" alt="Google">
+                Google로 로그인
+            </button>
+        </div>
+
+        <div class="status" id="statusMessage"></div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-box">
+                <h3>🆔 Sub Key (사용자 고유 ID)</h3>
+                <div class="result-value" id="subKeyValue"></div>
+                <button class="copy-btn" onclick="copyToClipboard('subKeyValue')">📋 복사</button>
+            </div>
+
+            <div class="result-box">
+                <h3>📧 이메일</h3>
+                <div class="result-value" id="emailValue"></div>
+                <button class="copy-btn" onclick="copyToClipboard('emailValue')">📋 복사</button>
+            </div>
+
+            <div class="result-box">
+                <h3>👤 이름</h3>
+                <div class="result-value" id="nameValue"></div>
+            </div>
+
+            <div class="result-box">
+                <h3>🔑 전체 JWT 토큰 Payload</h3>
+                <div class="result-value" id="fullPayload" style="max-height: 200px; overflow-y: auto;"></div>
+                <button class="copy-btn" onclick="copyToClipboard('fullPayload')">📋 복사</button>
+            </div>
+
+            <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        let tokenClient;
+        let accessToken = null;
+
+        function showStatus(message, isSuccess) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + (isSuccess ? 'success' : 'error');
+            statusElement.style.display = 'block';
+
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 3000);
+        }
+
+        function initializeGoogleAuth() {
+            const clientId = document.getElementById('clientId').value.trim();
+
+            if (!clientId) {
+                showStatus('Client ID를 입력해주세요.', false);
+                return;
+            }
+
+            // Google Identity Services 초기화
+            google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleCredentialResponse
+            });
+
+            // 로그인 버튼 렌더링
+            google.accounts.id.renderButton(
+                document.getElementById('googleLoginBtn'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    text: 'signin_with',
+                    width: '100%'
+                }
+            );
+
+            // UI 업데이트
+            document.getElementById('setupSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('googleLoginBtn').style.display = 'block';
+
+            showStatus('설정이 완료되었습니다. Google로 로그인하세요.', true);
+        }
+
+        function handleCredentialResponse(response) {
+            // JWT 토큰 파싱
+            const idToken = response.credential;
+
+            try {
+                // JWT는 header.payload.signature 형태
+                const base64Url = idToken.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+
+                const payload = JSON.parse(jsonPayload);
+
+                // 결과 표시
+                displayResults(payload);
+
+                showStatus('로그인 성공! JWT 토큰을 파싱했습니다.', true);
+            } catch (error) {
+                showStatus('JWT 토큰 파싱 중 오류가 발생했습니다: ' + error.message, false);
+                console.error('JWT 파싱 오류:', error);
+            }
+        }
+
+        function displayResults(payload) {
+            // Sub key 표시
+            document.getElementById('subKeyValue').textContent = payload.sub || 'N/A';
+
+            // 이메일 표시
+            document.getElementById('emailValue').textContent = payload.email || 'N/A';
+
+            // 이름 표시
+            document.getElementById('nameValue').textContent = payload.name || 'N/A';
+
+            // 전체 payload 표시 (보기 좋게 포맷팅)
+            document.getElementById('fullPayload').textContent = JSON.stringify(payload, null, 2);
+
+            // 결과 섹션 표시
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('loginSection').style.display = 'none';
+        }
+
+        function handleGoogleLogin() {
+            google.accounts.id.prompt();
+        }
+
+        function handleLogout() {
+            // 결과 초기화
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('setupSection').style.display = 'block';
+            document.getElementById('clientId').value = '';
+
+            showStatus('로그아웃되었습니다.', true);
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('클립보드에 복사되었습니다!', true);
+            }).catch(err => {
+                showStatus('복사 실패: ' + err, false);
+            });
+        }
+    </script>
+</body>
+</html>
